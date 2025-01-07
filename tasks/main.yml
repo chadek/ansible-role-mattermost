@@ -1,0 +1,12 @@
+---
+- name: Mattermost | Include tarball_install.yml
+  ansible.builtin.include_tasks: tarball_install.yml
+  when: mattermost_install_type == "tarball"
+
+- name: Mattermost | Include apt_install.yml
+  ansible.builtin.include_tasks: apt_install.yml
+  when: mattermost_install_type == "apt"
+
+- name: Mattermost | Include docker_install.yml
+  ansible.builtin.include_tasks: docker_install.yml
+  when: mattermost_install_type == "docker"

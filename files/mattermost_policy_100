@@ -1,0 +1,3 @@
+Package:  *
+Pin:  origin deb.packages.mattermost.com
+Pin-Priority: 100

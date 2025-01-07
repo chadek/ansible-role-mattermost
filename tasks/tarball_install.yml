@@ -1,0 +1,73 @@
+---
+- name: Mattermost | 'Download binary from https://releases.mattermost.com'
+  ansible.builtin.get_url:
+    url: 'https://releases.mattermost.com/{{ mattermost_version }}/mattermost-team-{{ mattermost_version }}-linux-amd64.tar.gz'
+    dest: /tmp/
+    mode: '0644'
+
+- name: Mattermost | Check if mattermost is already installed
+  ansible.builtin.stat:
+    path: /opt/mattermost
+  register: mattermost_exists
+
+- name: Mattermost | Clean up old files if this is an upgrade
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      find /opt/mattermost/ /opt/mattermost/client/ -mindepth 1 -maxdepth 1 \! \( -type d \( -path /opt/mattermost/client \
+        -o -path /opt/mattermost/client/plugins \
+        -o -path /opt/mattermost/config \
+        -o -path /opt/mattermost/logs \
+        -o -path /opt/mattermost/plugins \
+        -o -path /opt/mattermost/data \) -prune \) | sort | sudo xargs rm -r
+  args:
+    executable: /bin/bash
+  when: mattermost_exists.stat.exists
+  register: clean # <- Registers the command output.
+  changed_when: clean.rc != 0 # <- Uses the return code to define when the task has changed.
+
+- name: Mattermost | Unpack mattermost archive.
+  ansible.builtin.unarchive:
+    src: /tmp/mattermost-team-{{ mattermost_version }}-linux-amd64.tar.gz
+    dest: /opt/
+    copy: false
+  args:
+    creates: /opt/mattermost/bin/platform
+
+- name: Mattermost | Create system group
+  ansible.builtin.group:
+    name: "{{ mattermost_system_group }}"
+    state: present
+
+- name: Mattermost | Create system user
+  ansible.builtin.user:
+    name: "{{ mattermost_system_user }}"
+    group: "{{ mattermost_system_group }}"
+    system: true
+    state: present
+    create_home: false
+
+- name: Mattermost | Apply mattermost config.json template
+  ansible.builtin.template:
+    src: mattermost-config.json.j2
+    dest: /opt/mattermost/config/config.json
+    owner: "{{ mattermost_system_user }}"
+    group: "{{ mattermost_system_user }}"
+    mode: '0644'
+  when: not mattermost_exists.stat.exists
+  notify: Daemon Reload mattermost
+
+- name: Change mattermost directory permissions
+  ansible.builtin.file:
+    path: /opt/mattermost
+    state: directory
+    owner: "{{ mattermost_system_user }}"
+    group: "{{ mattermost_system_user }}"
+    recurse: true
+
+- name: Mattermost | Place systemd unit
+  ansible.builtin.template:
+    src: "mattermost.service.j2"
+    dest: /etc/systemd/system/mattermost.service
+    mode: '0644'
+  notify: Daemon Reload mattermost

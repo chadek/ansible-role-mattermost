@@ -1,0 +1,59 @@
+---
+- name: Mattermost | Ensure apt-transport-https is installed
+  ansible.builtin.apt:
+    pkg:
+      - apt-transport-https
+      - gpg
+    state: present
+
+- name: Mattermost | Get apt key
+  ansible.builtin.get_url:
+    url: https://deb.packages.mattermost.com/pubkey.gpg
+    dest: /usr/share/keyrings/mattermost-archive-keyring.asc
+    mode: '0644'
+    force: true
+
+- name: Mattermost | Verify GPG key fingerprint
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      gpg --show-keys --with-fingerprint --with-colons /usr/share/keyrings/mattermost-archive-keyring.asc 2>/dev/null | grep -m 1 fpr | awk -F: '{print $10}'
+  args:
+    executable: /bin/bash
+  register: gpg_fingerprint
+  changed_when: gpg_fingerprint.rc != 0 # <- Uses the return code to define when the task has changed.
+
+- name: Mattermost | Check if GPG fingerprint matches the expected value
+  ansible.builtin.assert:
+    that:
+      - gpg_fingerprint.stdout.strip() == "{{ mattermost_apt_gpg_fingerprint }}"
+    fail_msg: "GPG fingerprint does not match the expected value."
+    success_msg: "GPG fingerprint matches the expected value."
+
+- name: Mattermost | Ensure grafana apt repository is present
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/mattermost-archive-keyring.asc] https://deb.packages.mattermost.com {{ ansible_distribution_release }} main"
+    update_cache: true
+    state: present
+
+- name: Mattermost | Lower Priority from grafana repo (do not trust that repo for anything different)
+  ansible.builtin.template:
+    src: ./files/mattermost_policy_100
+    dest: /etc/apt/preferences.d/mattermost_policy_100
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Mattermost | Ensure mattermost is installed
+  ansible.builtin.apt:
+    name: mattermost
+    state: present
+
+- name: Mattermost | Apply mattermost config.json template
+  ansible.builtin.template:
+    src: mattermost-config.json.j2
+    dest: /opt/mattermost/config/config.json
+    owner: "{{ mattermost_system_user }}"
+    group: "{{ mattermost_system_user }}"
+    mode: '0644'
+  notify: Restart mattermost

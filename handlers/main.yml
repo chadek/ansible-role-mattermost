@@ -1,0 +1,13 @@
+---
+- name: Daemon Reload mattermost
+  ansible.builtin.systemd:
+    name: mattermost
+    daemon_reload: true
+    enabled: true
+    state: restarted
+
+- name: Restart mattermost
+  ansible.builtin.systemd:
+    name: mattermost
+    enabled: true
+    state: restarted

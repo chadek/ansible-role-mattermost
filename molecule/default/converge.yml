@@ -1,0 +1,61 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      when: ansible_os_family == 'Debian'
+      changed_when: false
+  vars:
+    mattermost_db: {
+      name: "mattermost",
+      user: "mattermost",
+      pass: "secret",
+      host: "localhost",
+      port: "5432"
+    }
+
+    mattermost_conf: {
+      listenAdress: "0.0.0.0:8065",
+      domain: "http://localhost",
+      team_sitename: "Mattermost deployed by Ansible",
+      team_maxusers: 50,
+      # SMTP settings
+      smtp_auth: "false",
+      smtp_user: "",
+      smtp_pass: "",
+      smtp_host: "",
+      smtp_port: "",
+      # Connection security for SMTP
+      # Can be "", "TLS" or "STARTTLS"
+      smtp_tls: "",
+
+      # Metric settings
+      metrics_bind_address: "0.0.0.0",
+      sendemailnotifications: "true",
+      feedbackname: "Mattermost",
+      feedbackemail: "noreply@example.com",
+      replytoaddress: "noreply@example.com"
+    }
+
+    postgresql_databases:
+      - name: "{{ mattermost_db.name }}"
+        owner: "{{ mattermost_db.user }}"
+    postgresql_users:
+      - name: "{{ mattermost_db.user }}"
+        password: "{{ mattermost_db.pass }}"
+        db: "{{ mattermost_db.name }}"
+        priv: "CREATE/CONNECT/ALL"
+    postgres_users_no_log: false
+
+  tasks:
+    - name: "Include postgresql"
+      ansible.builtin.include_role:
+        name: "geerlingguy.postgresql"
+    - name: "Include mattermost"
+      ansible.builtin.include_role:
+        name: "chadek.mattermost"

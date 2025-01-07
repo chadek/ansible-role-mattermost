@@ -1,0 +1,26 @@
+[Unit]
+Description=Mattermost
+After=network.target {% if mattermost_db.host == '127.0.0.1' %}postgresql.service
+BindsTo=postgresql.service
+{% endif %}
+[Service]
+Type=notify
+ExecStart=/opt/mattermost/bin/mattermost
+TimeoutStartSec=3600
+KillMode=mixed
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/mattermost
+User={{ mattermost_system_user }}
+Group={{ mattermost_system_group }}
+LimitNOFILE={{ mattermost_limit_nofile }}
+NoNewPrivileges=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+MemoryDenyWriteExecute=true
+ProtectSystem=full
+
+[Install]
+WantedBy = multi-user.target

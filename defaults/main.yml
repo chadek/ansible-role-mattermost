@@ -1,0 +1,45 @@
+---
+mattermost_version: "10.3.1"
+mattermost_system_user: mattermost
+mattermost_system_group: "{{ mattermost_system_user }}"
+mattermost_install_type: tarball
+
+# Mattermost PPA gpg fingerprint
+mattermost_apt_gpg_fingerprint: "A1B31D46F0F3A10B02CF2D44F8F2C31744774B28"
+
+# Database credentials
+mattermost_db: {
+  name: "mattermost",
+  user: "mattermost",
+  pass: "secret",
+  host: "127.0.0.1",
+  port: "5432"
+}
+# Systemd settings
+mattermost_limit_nofile: "49152"
+
+# Mattermost Conf
+mattermost_http_type: "http"  # http or https
+# Team settings
+mattermost_conf: {
+  listenAdress: "127.0.0.1:8065",
+  domain: "https://localhost",
+  team_sitename: "Mattermost deployed by Ansible",
+  team_maxusers: 50,
+  # SMTP settings
+  smtp_auth: "false",
+  smtp_user: "",
+  smtp_pass: "",
+  smtp_host: "",
+  smtp_port: "",
+  # Connection security for SMTP
+  # Can be "", "TLS" or "STARTTLS"
+  smtp_tls: "",
+
+  # Metric settings
+  metrics_bind_address: "127.0.0.1",
+  sendemailnotifications: "true",
+  feedbackname: "Mattermost",
+  feedbackemail: "noreply@example.com",
+  replytoaddress: "noreply@example.com"
+}
