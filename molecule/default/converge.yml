@@ -49,7 +49,10 @@
       - name: "{{ mattermost_db.user }}"
         password: "{{ mattermost_db.pass }}"
         db: "{{ mattermost_db.name }}"
-        priv: "CREATE/CONNECT/ALL"
+    postgresql_privs:
+      - name: "{{ mattermost_db.name }}"
+        roles: "{{ mattermost_db.user }}"
+        privs: "CREATE/CONNECT/ALL"
     postgres_users_no_log: false
 
   tasks:
