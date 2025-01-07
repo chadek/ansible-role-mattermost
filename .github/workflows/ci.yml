@@ -58,6 +58,9 @@ jobs:
       - name: Install test dependencies.
         run: pip3 install ansible molecule molecule-plugins[podman] podman
 
+      - name: Install Ansible and import deploy_archive role
+        run: ansible-galaxy role install geerlingguy.postgresql
+
       - name: Run Molecule tests.
         run: molecule test
         env:
