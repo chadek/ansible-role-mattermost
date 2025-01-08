@@ -53,7 +53,7 @@
       - db: "{{ mattermost_db.name }}"
         roles: "{{ mattermost_db.user }}"
         privs: "ALL"
-        objs: "database"
+        type: "database"
     postgres_users_no_log: false
 
   tasks:
