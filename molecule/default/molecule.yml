@@ -15,13 +15,11 @@ platforms:
     published_ports:
       - "8080:8065"
   - name: tarball
-    image: "docker.io/geerlingguy/docker-rockylinux9-ansible:latest"
+    image: "docker.io/geerlingguy/docker-ubuntu2404-ansible:latest"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     cgroupns_mode: host
-    groups:
-      - wheel 
     privileged: true
     pre_build_image: true
     published_ports:
