@@ -38,12 +38,6 @@ jobs:
   molecule:
     name: Molecule
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        distro:
-          - rockylinux9
-          - ubuntu2404
-
     steps:
       - name: Check out the codebase.
         uses: actions/checkout@v4
@@ -66,4 +60,3 @@ jobs:
         env:
           PY_COLORS: "1"
           ANSIBLE_FORCE_COLOR: "1"
-          MOLECULE_DISTRO: ${{ matrix.distro }}
