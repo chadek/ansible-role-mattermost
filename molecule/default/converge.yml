@@ -52,7 +52,7 @@
     postgresql_privs:
       - db: "{{ mattermost_db.name }}"
         roles: "{{ mattermost_db.user }}"
-        privs: "CREATE/CONNECT/ALL"
+        privs: "ALL"
         objs: "database"
     postgres_users_no_log: false
 
