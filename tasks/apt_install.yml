@@ -21,7 +21,7 @@
   args:
     executable: /bin/bash
   register: gpg_fingerprint
-  changed_when: gpg_fingerprint.rc != 0 # <- Uses the return code to define when the task has changed.
+  changed_when: gpg_fingerprint.rc != 0
 
 - name: Mattermost | Check if GPG fingerprint matches the expected value
   ansible.builtin.assert:
