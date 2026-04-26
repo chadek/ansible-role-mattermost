@@ -1,0 +1,92 @@
+#!/bin/sh
+# Replaces /opt/mattermost/bin/mattermost with the mostlymatter build
+# after every apt install/upgrade of the mattermost package.
+
+set -e
+
+if ! dpkg -l mattermost 2>/dev/null | grep -q '^ii'; then
+    exit 0
+fi
+
+if [ -n "${DPKG_HOOK_PACKAGES:-}" ]; then
+    echo "$DPKG_HOOK_PACKAGES" | tr ' ' '\n' | grep -qx 'mattermost' || exit 0
+fi
+
+VERSION="$(dpkg-query -W -f='${Version}' mattermost 2>/dev/null | sed 's/-.*//')"
+if [ -z "$VERSION" ]; then
+    echo "replace-mattermost-binary: could not determine mattermost version, aborting." >&2
+    exit 1
+fi
+
+case "$(dpkg --print-architecture)" in
+    amd64) ARCH="amd64" ;;
+    arm64) ARCH="arm64" ;;
+    *)
+        echo "replace-mattermost-binary: unsupported architecture $(dpkg --print-architecture), aborting." >&2
+        exit 1
+        ;;
+esac
+
+BASE_URL="{{ mattermost_mostlymatter_base_url }}"
+BINARY_URL="${BASE_URL}/mostlymatter-${ARCH}-v${VERSION}"
+CHECKSUM_URL="${BASE_URL}/mostlymatter-${ARCH}-v${VERSION}.sha512"
+TARGET="/opt/mattermost/bin/mattermost"
+TMP_FILE="$(mktemp /tmp/mattermost-binary.XXXXXX)"
+TMP_CHECKSUM="$(mktemp /tmp/mattermost-checksum.XXXXXX)"
+
+trap 'rm -f "$TMP_FILE" "$TMP_CHECKSUM"' EXIT
+
+echo "replace-mattermost-binary: downloading mostlymatter v${VERSION} (${ARCH})..."
+if ! curl -fsSL --retry 3 --retry-delay 2 -o "$TMP_FILE" "$BINARY_URL"; then
+    echo "replace-mattermost-binary: download failed from $BINARY_URL" >&2
+    exit 1
+fi
+
+if [ ! -s "$TMP_FILE" ]; then
+    echo "replace-mattermost-binary: downloaded file is empty, aborting." >&2
+    exit 1
+fi
+
+echo "replace-mattermost-binary: downloading checksum..."
+if ! curl -fsSL --retry 3 --retry-delay 2 -o "$TMP_CHECKSUM" "$CHECKSUM_URL"; then
+    echo "replace-mattermost-binary: checksum download failed from $CHECKSUM_URL" >&2
+    exit 1
+fi
+
+if [ ! -s "$TMP_CHECKSUM" ]; then
+    echo "replace-mattermost-binary: downloaded checksum file is empty, aborting." >&2
+    exit 1
+fi
+
+EXPECTED_HASH="$(awk '{print $1}' "$TMP_CHECKSUM")"
+if [ -z "$EXPECTED_HASH" ]; then
+    echo "replace-mattermost-binary: could not parse checksum file, aborting." >&2
+    exit 1
+fi
+
+ACTUAL_HASH="$(sha512sum "$TMP_FILE" | awk '{print $1}')"
+echo "replace-mattermost-binary: verifying SHA-512 checksum..."
+if [ "$ACTUAL_HASH" != "$EXPECTED_HASH" ]; then
+    echo "replace-mattermost-binary: checksum mismatch!" >&2
+    echo "  expected: $EXPECTED_HASH" >&2
+    echo "  actual:   $ACTUAL_HASH" >&2
+    exit 1
+fi
+echo "replace-mattermost-binary: checksum verified."
+
+ORIG_PERMS="$(stat -c '%a' "$TARGET" 2>/dev/null || echo '755')"
+ORIG_OWNER="$(stat -c '%u:%g' "$TARGET" 2>/dev/null || echo 'root:root')"
+
+chmod "$ORIG_PERMS" "$TMP_FILE"
+chown "$ORIG_OWNER" "$TMP_FILE"
+mv -f "$TMP_FILE" "$TARGET"
+
+echo "replace-mattermost-binary: successfully replaced $TARGET with mostlymatter v${VERSION}."
+
+echo "replace-mattermost-binary: restarting mattermost..."
+if systemctl restart mattermost; then
+    echo "replace-mattermost-binary: mattermost service restarted successfully."
+else
+    echo "replace-mattermost-binary: failed to restart mattermost service." >&2
+    exit 1
+fi

@@ -11,36 +11,38 @@
       when: ansible_os_family == 'Debian'
       changed_when: false
   vars:
-    mattermost_db: {
-      name: "mattermost",
-      user: "mattermost",
-      pass: "secret",
-      host: "localhost",
-      port: "5432"
-    }
+    mattermost_db:
+      {
+        name: "mattermost",
+        user: "mattermost",
+        pass: "secret",
+        host: "localhost",
+        port: "5432",
+      }
 
-    mattermost_conf: {
-      listenAdress: "0.0.0.0:8065",
-      domain: "http://localhost",
-      team_sitename: "Mattermost deployed by Ansible",
-      team_maxusers: 50,
-      # SMTP settings
-      smtp_auth: "false",
-      smtp_user: "",
-      smtp_pass: "",
-      smtp_host: "",
-      smtp_port: "",
-      # Connection security for SMTP
+    mattermost_conf:
+      {
+        listenAdress: "0.0.0.0:8065",
+        domain: "http://localhost",
+        team_sitename: "Mattermost deployed by Ansible",
+        team_maxusers: 50,
+        # SMTP settings
+        smtp_auth: "false",
+        smtp_user: "",
+        smtp_pass: "",
+        smtp_host: "",
+        smtp_port: "",
+        # Connection security for SMTP
       # Can be "", "TLS" or "STARTTLS"
-      smtp_tls: "",
+        smtp_tls: "",
 
-      # Metric settings
-      metrics_bind_address: "0.0.0.0",
-      sendemailnotifications: "true",
-      feedbackname: "Mattermost",
-      feedbackemail: "noreply@example.com",
-      replytoaddress: "noreply@example.com"
-    }
+        # Metric settings
+        metrics_bind_address: "0.0.0.0",
+        sendemailnotifications: "true",
+        feedbackname: "Mattermost",
+        feedbackemail: "noreply@example.com",
+        replytoaddress: "noreply@example.com",
+      }
 
     postgresql_databases:
       - name: "{{ mattermost_db.name }}"

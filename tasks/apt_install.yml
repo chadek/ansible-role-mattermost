@@ -1,8 +1,10 @@
 ---
-- name: Mattermost | Ensure apt-transport-https is installed
+- name: Mattermost | Ensure prerequisites are installed
   ansible.builtin.apt:
     pkg:
       - apt-transport-https
+      - ca-certificates
+      - curl
       - gpg
     state: present
 
@@ -10,7 +12,7 @@
   ansible.builtin.get_url:
     url: https://deb.packages.mattermost.com/pubkey.gpg
     dest: /usr/share/keyrings/mattermost-archive-keyring.asc
-    mode: '0644'
+    mode: "0644"
     force: true
 
 - name: Mattermost | Verify GPG key fingerprint
@@ -30,13 +32,16 @@
     fail_msg: "GPG fingerprint does not match the expected value."
     success_msg: "GPG fingerprint matches the expected value."
 
-- name: Mattermost | Ensure grafana apt repository is present
+- name: Mattermost | Ensure mattermost apt repository is present
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/mattermost-archive-keyring.asc] https://deb.packages.mattermost.com {{ ansible_distribution_release }} main"
+    repo: "deb [signed-by=/usr/share/keyrings/mattermost-archive-keyring.asc]
+      https://deb.packages.mattermost.com {{ ansible_distribution_release }}
+      main"
     update_cache: true
     state: present
 
-- name: Mattermost | Lower Priority from grafana repo (do not trust that repo for anything different)
+- name: Mattermost | Lower Priority from mattermost repo (do not trust that repo
+    for anything different)
   ansible.builtin.template:
     src: ./files/mattermost_policy_100
     dest: /etc/apt/preferences.d/mattermost_policy_100
@@ -55,5 +60,41 @@
     dest: /opt/mattermost/config/config.json
     owner: "{{ mattermost_system_user }}"
     group: "{{ mattermost_system_user }}"
-    mode: '0644'
+    mode: "0644"
   notify: Restart mattermost
+
+- name: Mattermost | Create APT hook script directory
+  ansible.builtin.file:
+    path: /etc/apt/apt.conf.d/scripts
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: mattermost_mostlymatter_enabled
+
+- name: Mattermost | Deploy mostlymatter binary replacement hook script
+  ansible.builtin.template:
+    src: replace-mattermost-binary.j2
+    dest: /etc/apt/apt.conf.d/scripts/replace-mattermost-binary
+    owner: root
+    group: root
+    mode: "0755"
+  when: mattermost_mostlymatter_enabled
+
+- name: Mattermost | Register APT post-invoke hook for mostlymatter
+  ansible.builtin.copy:
+    content: |
+      // Runs the mostlymatter binary replacement after every dpkg invocation.
+      DPkg::Post-Invoke {"/etc/apt/apt.conf.d/scripts/replace-mattermost-binary";};
+    dest: /etc/apt/apt.conf.d/99replace-mattermost-binary
+    owner: root
+    group: root
+    mode: "0644"
+  when: mattermost_mostlymatter_enabled
+
+- name: Mattermost | Run mostlymatter binary replacement for freshly installed
+    mattermost
+  ansible.builtin.command:
+    cmd: /etc/apt/apt.conf.d/scripts/replace-mattermost-binary
+  when: mattermost_mostlymatter_enabled
+  changed_when: true

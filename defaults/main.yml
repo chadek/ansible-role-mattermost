@@ -7,6 +7,10 @@ mattermost_install_type: tarball
 # Mattermost PPA gpg fingerprint
 mattermost_apt_gpg_fingerprint: "A1B31D46F0F3A10B02CF2D44F8F2C31744774B28"
 
+# mostlymatter binary replacement hook (apt install only)
+mattermost_mostlymatter_enabled: true
+mattermost_mostlymatter_base_url: "https://packages.framasoft.org/projects/mostlymatter"
+
 # Database credentials
 mattermost_db: {
   name: "mattermost",
@@ -19,8 +23,6 @@ mattermost_db: {
 mattermost_limit_nofile: "49152"
 
 # Mattermost Conf
-mattermost_http_type: "http"  # http or https
-# Team settings
 mattermost_conf: {
   listenAdress: "127.0.0.1:8065",
   domain: "https://localhost",
@@ -34,7 +36,7 @@ mattermost_conf: {
   smtp_port: "",
   # Connection security for SMTP
   # Can be "", "TLS" or "STARTTLS"
-  smtp_tls: "",
+  smtp_tls: "STARTTLS",
 
   # Metric settings
   metrics_bind_address: "127.0.0.1",

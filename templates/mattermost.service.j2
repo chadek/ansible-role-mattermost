@@ -1,8 +1,10 @@
 [Unit]
 Description=Mattermost
-After=network.target {% if mattermost_db.host == '127.0.0.1' %}postgresql.service
+After=network.target {% if mattermost_db["host"] == '127.0.0.1'  %}postgresql.service
 BindsTo=postgresql.service
 {% endif %}
+
+
 [Service]
 Type=notify
 ExecStart=/opt/mattermost/bin/mattermost
