@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python 3.
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Install test dependencies.
         run: pip3 install yamllint ansible-lint
@@ -38,12 +38,6 @@ jobs:
   molecule:
     name: Molecule
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        distro:
-          - rockylinux8
-          - ubuntu2404
-
     steps:
       - name: Check out the codebase.
         uses: actions/checkout@v4
@@ -53,14 +47,16 @@ jobs:
       - name: Set up Python 3.
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Install test dependencies.
-        run: pip3 install ansible molecule molecule-plugins[podman] podman
+        run: pip3 install ansible molecule molecule-podman molecule-plugins[podman] podman
+
+      - name: Install Ansible and import deploy_archive role
+        run: ansible-galaxy role install geerlingguy.postgresql
 
       - name: Run Molecule tests.
         run: molecule test
         env:
           PY_COLORS: "1"
           ANSIBLE_FORCE_COLOR: "1"
-          MOLECULE_DISTRO: ${{ matrix.distro }}

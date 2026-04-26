@@ -23,8 +23,8 @@
   args:
     executable: /bin/bash
   when: mattermost_exists.stat.exists
-  register: clean # <- Registers the command output.
-  changed_when: clean.rc != 0 # <- Uses the return code to define when the task has changed.
+  register: clean
+  changed_when: clean.rc != 0
 
 - name: Mattermost | Unpack mattermost archive.
   ansible.builtin.unarchive:
